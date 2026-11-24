@@ -1,0 +1,15 @@
+# Labels for core/config/plugin.postgresql.settings.yml, merged into the Settings page.
+admin:
+  label: Web admin
+  info: 'What the DATABASE menu offers to open a PostgreSQL database in a browser. On DDEV it is the official add-on ddev/ddev-adminer, added to a project the first time it is asked for, and the project restarted. pgAdmin has no official DDEV add-on yet; the other runtimes cannot add a web admin to a project yet.'
+  options:
+    adminer: Adminer
+    none: None
+keep:
+  label: Exports kept per project
+  info: 'How many exports of one project the backups folder keeps. When a new one is made the oldest go, the exports made before an import among them. 0 keeps every one.'
+  number:
+    min: 0
+    max: 1000
+    step: 1
+    unit: exports, 0 keeps every one
