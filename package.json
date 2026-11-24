@@ -1,0 +1,113 @@
+{
+  "name": "@webship.co/workspace-postgresql",
+  "version": "1.0.0",
+  "description": "PostgreSQL for Webship Workspace: the DATABASE menu on every project whose database is PostgreSQL (psql in a screen, tables and sizes, an export into the backups folder with pg_dump, an import of a dump, the statements running now and the slowest when pg_stat_statements is there, the connection details, and Adminer on DDEV), and its tool, cmd-tools-postgresql.sh, on DDEV and on a compose file of the project's own. It carries its AI items, each placed in the workspace folder of its kind: an agent, a skill, a command and a prompt. An engine of @webship.co/workspace-database.",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "license": "ISC",
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webship/workspace-postgresql.git"
+  },
+  "files": [
+    "dist/src",
+    "ai",
+    "commands",
+    "config",
+    "docs",
+    "features",
+    "scripts",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "workspacePlugin": {
+    "name": "postgresql",
+    "label": "PostgreSQL",
+    "family": "databases",
+    "summary": "The DATABASE menu of a project whose database is PostgreSQL: psql, tables and sizes, export and import, Adminer",
+    "settingsFile": "plugin.postgresql.settings.yml",
+    "settingsTemplate": "config/plugin.postgresql.settings.yml",
+    "labels": "config/settings.labels.yml",
+    "needs": {
+      "plugins": [
+        [
+          "dev",
+          "test",
+          "demos",
+          "sandboxes",
+          "projects"
+        ],
+        "ai-agents",
+        "ai-skills",
+        "ai-commands",
+        "ai-prompts"
+      ]
+    },
+    "suggests": {
+      "commands": [
+        {
+          "command": "docker",
+          "hint": "https://docs.docker.com/engine/install/",
+          "for": "cmd-tools-postgresql.sh, on a compose file of the project's own"
+        }
+      ]
+    },
+    "typeActions": {
+      "database": [
+        "sites"
+      ]
+    },
+    "commands": {
+      "types": [
+        "sites"
+      ],
+      "files": [
+        "commands/cmd-tools-postgresql.sh"
+      ]
+    },
+    "scripts": {
+      "functions": [
+        "scripts/functions/fun-postgresql.sh"
+      ],
+      "args": [
+        "scripts/args/arg-postgresql.sh"
+      ]
+    },
+    "ai": {
+      "agents": [
+        "ai/agents/postgresql-helper.md"
+      ],
+      "skills": [
+        "ai/skills/postgresql-database"
+      ],
+      "commands": [
+        "ai/commands/postgresql-sizes.md"
+      ],
+      "prompts": [
+        "ai/prompts/postgresql-dump-and-check.md"
+      ]
+    },
+    "features": [
+      "features/postgresql.feature"
+    ]
+  },
+  "dependencies": {
+    "@webship.co/workspace-database": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@webship.co/workspace-plugin-api": "^1.0.12",
+    "typescript": "^5.9.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
