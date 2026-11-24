@@ -31,7 +31,7 @@ On a row whose database is PostgreSQL, the caption says `PostgreSQL <version>`, 
 | Console (psql) | `--console` | psql on the database, in a screen: `ddev psql` on DDEV, psql in the database's container elsewhere |
 | Tables and sizes | `--tables` | The tables of every schema but the system's, largest first, with rows (an estimate) and size (indexes and TOAST in it), in the modal |
 | Export to the backups folder | `--export` | `<backups>/<folder>/<project>--postgresql--<when>.sql.gz`, pg_dump's plain format |
-| Import a dump… | `--import <file>` | The dumps of the backups folder, this project's first; asks first; exports the database as it is, then drops it, makes it again and imports |
+| Import a dump… | `--import <file>` | The dumps of the backups folder, this project's first; asks first; checks that the dump is whole, exports the database as it is, then drops it, makes it again and imports |
 | Running statements | `--running` | What runs now in the database, longest first; the slowest ten by their mean time when `pg_stat_statements` is loaded |
 | Connection details | `--info` | Version, database, user, encoding, size, and how a client on this machine connects |
 | Add Adminer | `--admin adminer` | DDEV: the official add-on (`ddev/ddev-adminer`), and a restart |
@@ -75,7 +75,7 @@ into a database of another user as well.
 | Key | Default | What it is |
 | --- | --- | --- |
 | `admin` | `adminer` | The web admin the menu offers: `adminer` or `none` |
-| `keep` | `0` | How many exports of one project the backups folder keeps; the oldest go when a new one is made. `0` keeps every one |
+| `keep` | `0` | How many exports of one project the backups folder keeps; the oldest go when a new one is made, never the dump an import is reading. `0` keeps every one |
 
 ## Runtimes
 

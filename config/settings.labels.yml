@@ -7,7 +7,7 @@ admin:
     none: None
 keep:
   label: Exports kept per project
-  info: 'How many exports of one project the backups folder keeps. When a new one is made the oldest go, the exports made before an import among them. 0 keeps every one.'
+  info: 'How many exports of one project the backups folder keeps. When a new one is made the oldest go, the exports made before an import among them; never the dump an import is reading. 0 keeps every one.'
   number:
     min: 0
     max: 1000

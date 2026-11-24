@@ -228,11 +228,14 @@ function postgresql_running() {
   fi
 }
 
-# This project's exports past the keep: setting go, the oldest first.
+# This project's exports past the keep: setting go, the oldest first; never the dump an import is reading
+# (POSTGRESQL_DB_KEEP_SPARE, set by postgresql_import for its before-import export).
 function postgresql_keep() {
-  local keep="${plugin_postgresql_keep:-0}" dir="${backups}/${doc_name}" old ;
+  local keep="${plugin_postgresql_keep:-0}" dir="${backups}/${doc_name}" old spare="" ;
   [[ "${keep}" =~ ^[0-9]+$ ]] && [ "${keep}" -gt 0 ] || return 0 ;
+  [ -n "${POSTGRESQL_DB_KEEP_SPARE:-}" ] && spare="$(cd "$(dirname "${POSTGRESQL_DB_KEEP_SPARE}")" 2> /dev/null && pwd -P)/$(basename "${POSTGRESQL_DB_KEEP_SPARE}")" ;
   ls -1t "${dir}/${PROJECT_NAME}--postgresql--"*.sql.gz 2> /dev/null | tail -n +$(( keep + 1 )) | while read -r old ; do
+    [ -n "${spare}" ] && [ "$(cd "$(dirname "${old}")" && pwd -P)/$(basename "${old}")" = "${spare}" ] && continue ;
     rm -f "${old:?}" && echo "Removed an older export (keep: ${keep}): $(basename "${old}")" ;
   done
 }
@@ -263,6 +266,19 @@ function postgresql_export() {
   postgresql_keep ;
 }
 
+# A dump an import can take, checked before anything changes: a gzip that is whole (gzip -t), with something in it, or
+# a .sql file that is not empty.
+function postgresql_dump_ok() {
+  local file="$1" ;
+  case "${file}" in
+    *.gz)
+      gzip -t "${file}" 2> /dev/null || { echo "$(basename "${file}") is not a whole gzip file: nothing was imported." ; return 1 ; } ;
+      [ -n "$(gunzip -c "${file}" 2> /dev/null | head -c 64 | tr -d '\0')" ] || { echo "$(basename "${file}") is empty: nothing was imported." ; return 1 ; } ;;
+    *)
+      [ -r "${file}" ] && [ -s "${file}" ] || { echo "$(basename "${file}") is empty, or cannot be read: nothing was imported." ; return 1 ; } ;;
+  esac
+}
+
 # --import <file>: the database as it is, exported first; then emptied (dropped and made again, as DDEV's import-db
 # does) and filled from the dump.
 function postgresql_import() {
@@ -270,8 +286,10 @@ function postgresql_import() {
   case "${file}" in /*) ;; *) file="${current_path:-$PWD}/${file}" ;; esac
   [ -f "${file}" ] || { echo "No such file: ${file}" ; return 1 ; } ;
   case "${file}" in *.sql|*.sql.gz) ;; *) echo "A PostgreSQL dump is a .sql or .sql.gz file (pg_dump's plain format): ${file}" ; return 1 ;; esac
+  postgresql_dump_ok "${file}" || return 1 ;
   if [ "${NO_SAFETY_EXPORT}" != yes ] ; then
-    postgresql_export '' before-import || { echo "The export of the database as it is failed: nothing was imported." ; return 1 ; } ;
+    # The keep: setting prunes old exports after this one: never the dump being imported.
+    POSTGRESQL_DB_KEEP_SPARE="${file}" postgresql_export '' before-import || { echo "The export of the database as it is failed: nothing was imported." ; return 1 ; } ;
   fi
   echo "Importing $(basename "${file}") into the PostgreSQL database of ${PROJECT_NAME} ($(postgresql_runtime_title "${POSTGRESQL_DB_RUNTIME}"))" ;
   if [ "${POSTGRESQL_DB_VIA}" = ddev ] ; then
@@ -281,7 +299,14 @@ function postgresql_import() {
     # by the user it was made for.
     postgresql_in_db "${POSTGRESQL_DB_LOGIN}"' psql -U "$u" -d postgres -X -q -v ON_ERROR_STOP=1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '"'"'$d'"'"' AND pid <> pg_backend_pid()" -c "DROP DATABASE IF EXISTS \"$d\"" -c "CREATE DATABASE \"$d\" OWNER \"$u\"" > /dev/null' || { echo "The database could not be emptied: nothing was imported." ; return 1 ; } ;
     if [ "${POSTGRESQL_DB_VIA}" = compose ] ; then
-      case "${file}" in *.gz) gunzip -c "${file}" ;; *) cat "${file}" ;; esac | postgresql_in_db "${POSTGRESQL_DB_LOGIN} exec psql \"\$@\" -X -q -v ON_ERROR_STOP=1" > /dev/null || return 1 ;
+      case "${file}" in *.gz) gunzip -c "${file}" ;; *) cat "${file}" ;; esac | postgresql_in_db "${POSTGRESQL_DB_LOGIN} exec psql \"\$@\" -X -q -v ON_ERROR_STOP=1" > /dev/null ;
+      local st=("${PIPESTATUS[@]}") ;
+      if [ "${st[0]}" -ne 0 ] ; then
+        echo "The import failed: $(basename "${file}") could not be read whole, so the database may hold only part of it." ;
+        [ "${NO_SAFETY_EXPORT}" != yes ] && echo "The database as it was is the before-import export above, in ${backups}/${doc_name}." ;
+        return 1 ;
+      fi
+      [ "${st[1]}" -eq 0 ] || { echo "The import failed." ; return 1 ; } ;
     else
       ddev import-db --file="${file}" || return 1 ;
     fi

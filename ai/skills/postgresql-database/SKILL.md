@@ -28,7 +28,7 @@ the same menu, with that plugin installed.
 | Console (psql) | `--console` | psql on the database: `ddev psql` on DDEV; elsewhere psql in the database's container |
 | Tables and sizes | `--tables` (the modal reads `--tables --tsv`) | The tables of every schema but the system's, largest first, with rows (an estimate) and size. Reads only |
 | Export to the backups folder | `--export` | `<backups>/<folder>/<project>--postgresql--<when>.sql.gz`, pg_dump's plain format |
-| Import a dump… | `--import <file>` | Lists the dumps of the backups folder; asks first; exports the database as it is, then drops it, makes it again and fills it |
+| Import a dump… | `--import <file>` | Lists the dumps of the backups folder; asks first; checks that the dump is whole, exports the database as it is, then drops it, makes it again and fills it |
 | Running statements | `--running` | What runs now in the database, longest first; the slowest ten when `pg_stat_statements` is loaded. Reads only |
 | Connection details | `--info` | Version, database, user, encoding, size, and how a client on this machine connects |
 | Add Adminer | `--admin adminer` | DDEV only: the official add-on (ddev/ddev-adminer), and a restart |
@@ -65,7 +65,7 @@ everywhere (DDEV's import-db does it on DDEV), so a table the dump does not have
 | Key | What it is |
 | --- | --- |
 | `admin:` | The web admin the menu offers: `adminer` (the default) or `none` |
-| `keep:` | How many exports of one project the backups folder keeps; the oldest go when a new one is made. `0` keeps every one |
+| `keep:` | How many exports of one project the backups folder keeps; the oldest go when a new one is made, never the dump an import is reading. `0` keeps every one |
 
 ## Good to know
 
